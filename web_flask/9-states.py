@@ -1,28 +1,48 @@
 #!/usr/bin/python3
-"""
-starts a Flask web application
-"""
+"""This script starts a Flask web application"""
 
-from flask import Flask, render_template
-from models import *
+from flask import Flask
+from flask import render_template
 from models import storage
+from models.state import State
+import subprocess
+
+
 app = Flask(__name__)
 
 
 @app.route('/states', strict_slashes=False)
-@app.route('/states/<state_id>', strict_slashes=False)
-def states(state_id=None):
-    """display the states and cities listed in alphabetical order"""
-    states = storage.all("State")
-    if state_id is not None:
-        state_id = 'State.' + state_id
-    return render_template('9-states.html', states=states, state_id=state_id)
+def states():
+    """This function executes when 0.0.0.0:/5000/states
+    is requested
+    """
+    state_list = storage.all(State)
+    states = []
+    for value in state_list.values():
+        states.append(value)
+    return render_template('9-states.html', states=states, id=None)
+
+
+@app.route('/states/<id>', strict_slashes=False)
+def single_state(id):
+    """This function executes when 0.0.0.0:/5000/states
+    is requested
+    """
+    state_list = storage.all(State)
+    state = {}
+    for key, value in state_list.items():
+        if value.id == id:
+            state = state_list[key]
+    return render_template('9-states.html', id=id, state=state)
 
 
 @app.teardown_appcontext
-def teardown_db(exception):
-    """closes the storage on teardown"""
+def tear_down_context(exception):
+    """This function removes the current SQLAlchemy Session"""
     storage.close()
 
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='5000')
+    app.run(host='0.0.0.0')
+    subprocess.run("export", "FLASK_APP=9-states.py")
+    subprocess.run("flask run")
